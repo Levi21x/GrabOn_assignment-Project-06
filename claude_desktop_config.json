@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "grabon-deal-distributor": {
+      "command": "node",
+      "args": ["c:\\Users\\harsh\\OneDrive\\Desktop\\GrabOn_Assignment\\grabon-deal-distributor\\mcp-server\\index.js"]
+    }
+  }
+}

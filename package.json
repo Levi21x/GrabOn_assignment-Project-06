@@ -1,0 +1,16 @@
+{
+  "name": "grabon-deal-distributor",
+  "version": "1.0.0",
+  "description": "GrabOn Multi-Channel Deal Distribution MCP — Project 06",
+  "scripts": {
+    "install:all": "cd mcp-server && npm install && cd ../webhook-server && npm install && cd ../frontend-server && npm install && cd ../frontend && npm install",
+    "start:mcp": "cd mcp-server && node index.js",
+    "start:webhooks": "cd webhook-server && node index.js",
+    "start:api": "cd frontend-server && node index.js",
+    "start:frontend": "cd frontend && npm run dev",
+    "start:all": "concurrently \"npm run start:webhooks\" \"npm run start:api\" \"npm run start:frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GrabOn Deal Distributor — Mission Control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              syne: ['Syne', 'sans-serif'],
+              mono: ['"JetBrains Mono"', 'monospace'],
+            },
+            colors: {
+              navy: { 900: '#0A0F1E', 800: '#0D1117', 700: '#111827', 600: '#1a2238', 500: '#1e2a45' },
+              saffron: { DEFAULT: '#FF6B35', dark: '#E85425', glow: 'rgba(255,107,53,0.4)' },
+              cyan: { electric: '#00D4FF' },
+            },
+            animation: {
+              'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+              'blink': 'blink 1s step-end infinite',
+              'slide-up': 'slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both',
+              'hex-pulse': 'hexPulse 0.8s ease-in-out infinite',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body { background:#0A0F1E; color:#E2E8F0; }
+      ::-webkit-scrollbar { width:4px; height:4px; }
+      ::-webkit-scrollbar-track { background:#0A0F1E; }
+      ::-webkit-scrollbar-thumb { background:#2d3748; border-radius:2px; }
+    </style>
+  </head>
+  <body class="bg-navy-900">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

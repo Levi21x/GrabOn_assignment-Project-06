@@ -1,0 +1,20 @@
+{
+  "name": "grabon-mcp-server",
+  "version": "1.0.0",
+  "description": "GrabOn Multi-Channel Deal Distribution MCP Server",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "test:generate": "node test-generate.js",
+    "test:delivery": "node test-delivery.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@modelcontextprotocol/sdk": "latest",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "fastest-levenshtein": "^1.0.16",
+    "uuid": "^9.0.0"
+  }
+}
