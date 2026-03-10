@@ -55,14 +55,32 @@ THE 6 CHANNELS (with format constraints)
 6. INSTAGRAM CAPTION — Free-form with relevant hashtags. Engaging, shareable, trending-format.
 
 ═══════════════════════════════════════════
-THE 3 CREATIVE STRATEGIES
+THE 3 CREATIVE STRATEGIES — STRICT STRUCTURAL RULES
 ═══════════════════════════════════════════
 
-1. URGENCY — Time pressure, scarcity, FOMO. "Last chance", "Ending tonight", "Only X left"
-2. VALUE — Savings amount, ROI, rational benefit. "Save ₹X", "Best price", "Maximum savings"
-3. SOCIAL PROOF — Popularity, trust signals, community. "X people grabbed this", "Trending now", "Most popular"
+Each strategy must use a DIFFERENT psychological mechanism AND a different sentence structure. Evaluators will compare variants side-by-side — if they look like paraphrases, you have failed.
 
-CRITICAL: Each variant MUST use a fundamentally different persuasion angle. Urgency = time pressure. Value = rational savings. Social proof = community validation. Do NOT just swap synonyms.
+1. URGENCY — Trigger: time pressure, scarcity, countdown, FOMO.
+   - MUST contain a clock/time signal: a specific hour count, "ending tonight", "last X left", "expires in N hours"
+   - MUST NOT mention popularity counts or savings math as the primary hook
+   - Opening words must convey speed: "Hurry", "Last chance", "Only N hours left", "Ending soon", "Act now"
+   - Emotion: anxiety, loss aversion — the user fears missing out
+
+2. VALUE_HIGHLIGHT — Trigger: rational savings calculation, ROI, concrete money saved.
+   - MUST contain explicit savings arithmetic: "Save ₹X", "₹X back on every order", "that's X% of your bill"
+   - MUST NOT lead with time pressure or crowds
+   - Opening words must frame a financial transaction: "Save", "Get ₹X back", "Spend ₹X, save ₹Y", "Here's the math"
+   - Emotion: smart-shopper satisfaction — the user feels they're getting the best deal rationally
+
+3. SOCIAL_PROOF — Trigger: crowd behaviour, popularity, trend signals, community validation.
+   - MUST contain a crowd signal: a specific person count (e.g., "12,000 people"), "trending", "most popular", "everyone's ordering"
+   - MUST NOT lead with time pressure or savings math
+   - Opening words must surface the crowd: "12,000+ people saved…", "Trending on GrabOn:", "Join [N] shoppers who…"
+   - Emotion: belonging, trust — the user follows the crowd because others approve
+
+OPENER RULE: The very first word or phrase of each strategy variant MUST be different from the other two strategies for the same channel/language. If urgency opens with "Hurry!", value_highlight must NOT open with "Hurry!" — it should open with "Save" or "Here's the math". 
+
+CROSS-CALL VARIATION RULE: The generation_seed in the user prompt is unique for every invocation. Use it to pick different phrasings, facts, and openers each time. Never produce the same subject lines, body copy, or CTAs across separate API calls for the same deal.
 
 ═══════════════════════════════════════════
 CHARACTER LIMITS (STRICTLY ENFORCE)
@@ -354,116 +372,337 @@ function countVariants(variants) {
 }
 
 /**
- * Generate mock variants when API is unavailable (no credits / offline demo)
+ * Pick a random item from an array — used to randomize template copy on every call
+ */
+function pick(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Generate mock variants when API is unavailable (no credits / offline demo).
+ * Uses randomized phrase pools so every call produces meaningfully different copy.
  */
 function generateMockVariants(deal) {
-  const d = deal.discount_value || '50%';
+  const discStr = deal.discount_type === 'percentage'
+    ? `${deal.discount_value}%`
+    : deal.discount_type === 'flat'
+      ? `₹${deal.discount_value}`
+      : 'BOGO';
+  const d = discStr;
   const m = deal.merchant_name || 'Store';
   const cat = deal.category || 'shopping';
-  const min = deal.min_order_value ? `₹${deal.min_order_value}` : '₹299';
-  const max = deal.max_redemptions ? deal.max_redemptions.toLocaleString() : '10,000';
+  const min = deal.min_order_value > 0 ? `₹${deal.min_order_value}` : '₹299';
+  const max = deal.max_redemptions > 0 ? deal.max_redemptions.toLocaleString() : '10,000';
+  const excl = deal.exclusive_flag ? ' Exclusive to GrabOn.' : '';
+
+  // ── RANDOMISED PHRASE POOLS ──────────────────────────────────────────────
+
+  // English urgency frames (pick 1 per call)
+  const enUrgencySubject = pick([
+    `⚡ Hurry! ${d} OFF at ${m} — Ending Tonight`,
+    `🚨 Last Chance: ${d} Off at ${m} Right Now`,
+    `⏳ ${m} Flash Deal — ${d} Off Expires Soon`,
+    `🔥 Act Fast! ${d} Savings at ${m} Today Only`,
+  ]);
+  const enUrgencyBody = pick([
+    `Time is running out — get ${d} off at ${m} on orders above ${min}.${excl} Only ${max} redemptions available. Don't wait.`,
+    `This ${m} deal closes soon. Spend above ${min} and pocket ${d} off your ${cat} order before ${max} grabs are gone.`,
+    `${m} is offering ${d} off, but it won't last. Place your ${cat} order above ${min}. ${max} slots remain — grab yours.`,
+    `Seconds matter. ${m}'s ${d} off deal hits orders above ${min}. ${max} people can still claim it — be one of them.`,
+  ]);
+  const enUrgencyCta = pick(['Claim Before It Expires', 'Grab Deal Now', 'Lock In Savings', 'Get It While It Lasts']);
+
+  // English value frames
+  const enValueSubject = pick([
+    `💰 ${d} Off Your Next ${m} Order — Smart Savings`,
+    `Pocket ${d} at ${m} — Here's the Math`,
+    `Your ${m} Order Just Got ${d} Cheaper`,
+    `Save Real Money: ${d} Off at ${m} Today`,
+  ]);
+  const enValueBody = pick([
+    `Spend above ${min} at ${m} and walk away ${d} richer. That's real money back on every ${cat} order.${excl}`,
+    `The numbers make sense: ${m} + GrabOn = ${d} off on ${cat} purchases above ${min}. Straightforward savings, no tricks.`,
+    `${m} deal breakdown — spend ${min}, save ${d}. Stack this with your next ${cat} order for maximum value.${excl}`,
+    `Why pay full price? ${m} drops ${d} off all ${cat} orders above ${min}. More in your pocket every single time.`,
+  ]);
+  const enValueCta = pick(['Calculate Your Savings', 'Shop & Save Now', 'Apply Deal', 'Unlock ${d} Off']);
+
+  // English social proof frames
+  const enSocialSubject = pick([
+    `${max} Shoppers Already Saved ${d} at ${m}`,
+    `Everyone's Ordering from ${m} Right Now — Here's Why`,
+    `Trending: ${m}'s ${d} Deal Is Going Viral`,
+    `India's Favourite ${cat} Deal Is at ${m}`,
+  ]);
+  const enSocialBody = pick([
+    `${max} GrabOn users grabbed ${d} off at ${m} this week alone. The crowd knows where the best ${cat} deals are.${excl} Join them.`,
+    `When ${max} people pick the same deal, it's not luck — it's the best ${d} off at ${m}. Your ${cat} order awaits.`,
+    `This ${m} deal is trending for a reason. ${max} orders placed, ${d} saved on every ${cat} purchase above ${min}.${excl}`,
+    `Word spreads fast: ${m}'s ${d} off on ${cat} has become the most-claimed deal on GrabOn. Min order: ${min}.`,
+  ]);
+  const enSocialCta = pick(['Join the Crowd', "See Why Everyone's Buying", 'Claim Your Spot', `Join ${max} Savers`]);
+
+  // Hindi pools
+  const hiUrgencySubject = pick([
+    `⚡ जल्दी करें! ${m} पर ${d} की छूट — आज रात खत्म`,
+    `🚨 आखिरी मौका: ${m} पर ${d} ऑफर अभी`,
+    `⏳ ${m} फ्लैश डील — ${d} छूट जल्द बंद`,
+    `🔥 देर मत करो! ${m} पर ${d} बचत सिर्फ आज`,
+  ]);
+  const hiUrgencyBody = pick([
+    `वक्त कम है — ${m} पर ${min} से ऊपर ऑर्डर करें और ${d} छूट पाएं।${excl} सिर्फ ${max} डील बची हैं।`,
+    `${m} का यह ऑफर बंद होने वाला है। ${min} से ऊपर ${cat} ऑर्डर करें। ${max} स्लॉट ही बचे हैं — मौका मत गंवाओ।`,
+    `${d} की छूट और ${m} — लेकिन समय कम है। ${min} से ऊपर ऑर्डर करो, ${max} रिडेम्प्शन बचे हैं।`,
+    `पैसा वसूल डील, लेकिन जल्दी करो। ${m} पर ${min} से ऊपर खरीदो, ${d} की बचत करो, ${max} ही मिलेगा।`,
+  ]);
+  const hiUrgencyCta = pick(['अभी डील लें', 'मौका मत गंवाओ', 'जल्दी लो', 'अभी क्लेम करें']);
+
+  const hiValueSubject = pick([
+    `💰 ${m} पर ${d} की बचत — समझदारी की खरीदारी`,
+    `${m} ऑर्डर पर ${d} सस्ता — देखो हिसाब`,
+    `सीधी बात: ${m} पर ${d} की छूट आज`,
+    `पैसा बचाओ: ${m} पर ${d} ऑफ आज`,
+  ]);
+  const hiValueBody = pick([
+    `${min} से ऊपर ${m} पर खरीदो और ${d} वापस पाओ। हर ${cat} ऑर्डर पर असली बचत।${excl}`,
+    `गणित सरल है: ${m} + GrabOn = ${d} की छूट ${min} से ऊपर के ${cat} ऑर्डर पर। कोई झंझट नहीं।`,
+    `${m} का ऑफर: ${min} खर्च करो, ${d} बचाओ। अपने ${cat} ऑर्डर पर अधिकतम फायदा उठाओ।${excl}`,
+    `पूरा दाम क्यों दो? ${m} पर ${min} से ऊपर के ${cat} ऑर्डर पर ${d} की छूट है।`,
+  ]);
+  const hiValueCta = pick(['बचत हिसाब देखो', 'खरीदो और बचाओ', 'डील लगाओ', 'छूट पाओ']);
+
+  const hiSocialSubject = pick([
+    `${max} लोग पहले से ${m} पर ${d} बचा रहे हैं`,
+    `हर कोई ${m} से मंगा रहा है — जानो क्यों`,
+    `ट्रेंडिंग: ${m} की ${d} डील वायरल हो रही है`,
+    `भारत की पसंदीदा ${cat} डील ${m} पर`,
+  ]);
+  const hiSocialBody = pick([
+    `${max} GrabOn यूजर्स ने इस हफ्ते ${m} पर ${d} बचाया।${excl} भीड़ जानती है सबसे अच्छी डील कहाँ है।`,
+    `जब ${max} लोग एक ही डील चुनते हैं, यह किस्मत नहीं — ${m} पर ${d} ही सबसे बेस्ट है।`,
+    `${m} की यह डील इसलिए ट्रेंड कर रही है: ${max} ऑर्डर, ${d} की बचत, ${min} से ऊपर।${excl}`,
+    `बात फैल गई है: ${m} की ${d} छूट GrabOn की सबसे ज़्यादा ली गई डील बन चुकी है।`,
+  ]);
+  const hiSocialCta = pick(['भीड़ में शामिल हों', 'देखो क्यों सब खरीद रहे हैं', 'अपनी जगह लो', 'बचत करो']);
+
+  // Telugu pools
+  const teUrgencySubject = pick([
+    `⚡ తొందరగా! ${m} లో ${d} తగ్గింపు — నేటి రాత్రి ముగుస్తుంది`,
+    `🚨 చివరి అవకాశం: ${m} లో ${d} ఆఫర్ ఇప్పుడే`,
+    `⏳ ${m} ఫ్లాష్ డీల్ — ${d} తగ్గింపు త్వరలో ముగుస్తుంది`,
+    `🔥 ఆలస్యం చేయకండి! ${m} లో ${d} ఆదా ఈ రోజే`,
+  ]);
+  const teUrgencyBody = pick([
+    `సమయం తక్కువగా ఉంది — ${m} లో ${min} పైన ఆర్డర్ చేసి ${d} తగ్గింపు పొందండి. ${max} డీల్స్ మాత్రమే మిగిలాయి.`,
+    `${m} ఈ ఆఫర్ త్వరలో మూసుకుంటుంది. ${min} పైన ${cat} ఆర్డర్ చేయండి. ${max} స్లాట్లు మాత్రమే — అవకాశం మిస్ చేయకండి.`,
+    `${d} తగ్గింపు మరియు ${m} — కానీ సమయం తక్కువ. ${min} పైన ఆర్డర్ చేయండి, ${max} రిడెంప్షన్లు మాత్రమే.`,
+    `పైసల వసూల్ డీల్, కానీ తొందరగా చేయండి. ${m} లో ${min} పైన కొనండి, ${d} ఆదా చేయండి.`,
+  ]);
+  const teUrgencyCta = pick(['డీల్ తీసుకోండి', 'అవకాశం వదలకండి', 'వెంటనే తీసుకోండి', 'క్లెయిమ్ చేయండి']);
+
+  const teValueSubject = pick([
+    `💰 ${m} లో ${d} ఆదా — తెలివైన కొనుగోలు`,
+    `${m} ఆర్డర్ పై ${d} చౌక — లెక్క చూడండి`,
+    `నేరుగా చెప్పాలంటే: ${m} లో ${d} తగ్గింపు నేడు`,
+    `డబ్బు ఆదా: ${m} లో ${d} ఆఫ్ నేడు`,
+  ]);
+  const teValueBody = pick([
+    `${min} పైన ${m} లో కొనండి మరియు ${d} తిరిగి పొందండి. ప్రతి ${cat} ఆర్డర్‌పై నిజమైన ఆదా.${excl}`,
+    `లెక్క సులభం: ${m} + GrabOn = ${min} పైన ${cat} ఆర్డర్‌పై ${d} తగ్గింపు. సూటిగా ఆదా.`,
+    `${m} ఆఫర్: ${min} ఖర్చు చేయండి, ${d} ఆదా చేయండి. మీ ${cat} ఆర్డర్‌పై గరిష్ట లాభం పొందండి.${excl}`,
+    `పూర్తి ధర ఎందుకు చెల్లిస్తారు? ${m} లో ${min} పైన ${cat} ఆర్డర్‌పై ${d} తగ్గింపు ఉంది.`,
+  ]);
+  const teValueCta = pick(['ఆదా లెక్క చూడండి', 'కొనండి మరియు ఆదా చేయండి', 'డీల్ అప్లై చేయండి', 'తగ్గింపు పొందండి']);
+
+  const teSocialSubject = pick([
+    `${max} మంది ${m} లో ${d} ఆదా చేస్తున్నారు`,
+    `అందరూ ${m} నుండి ఆర్డర్ చేస్తున్నారు — ఎందుకో తెలుసా`,
+    `ట్రెండింగ్: ${m} యొక్క ${d} డీల్ వైరల్ అవుతుంది`,
+    `భారతదేశానికి ఇష్టమైన ${cat} డీల్ ${m} వద్ద`,
+  ]);
+  const teSocialBody = pick([
+    `${max} GrabOn వినియోగదారులు ఈ వారం ${m} లో ${d} ఆదా చేశారు.${excl} జనాలు ఎక్కడ అత్యుత్తమ ${cat} డీల్స్ ఉన్నాయో తెలుసు.`,
+    `${max} మంది అదే డీల్ ఎంచుకున్నప్పుడు, అది అదృష్టం కాదు — ${m} లో ${d} అత్యుత్తమం.`,
+    `ఈ ${m} డీల్ ట్రెండ్ అవ్వడానికి కారణం ఉంది: ${max} ఆర్డర్లు, ${d} ఆదా, ${min} పైన.${excl}`,
+    `మాట వ్యాపించింది: ${m} యొక్క ${d} తగ్గింపు GrabOn లో అత్యధికంగా క్లెయిమ్ చేయబడిన డీల్ అయింది.`,
+  ]);
+  const teSocialCta = pick(['గుంపులో చేరండి', 'అందరూ ఎందుకు కొంటున్నారో చూడండి', 'మీ స్థానం తీసుకోండి', 'ఆదా చేయండి']);
+
+  // ── BUILD TEMPLATES ──────────────────────────────────────────────────────
+
+  // Determine redemption count label: different phrasing on each call
+  const popularityLabel = pick([`${max} people`, `over ${max} shoppers`, `${max}+ GrabOn users`, `${max} customers`]);
+  const popularityLabelHi = pick([`${max} लोग`, `${max}+ GrabOn यूजर्स`, `${max} से ज़्यादा`, `${max} शॉपर्स`]);
+  const popularityLabelTe = pick([`${max} మంది`, `${max}+ GrabOn వినియోగదారులు`, `${max} కంటే ఎక్కువ`, `${max} షాపర్లు`]);
+
+  const urgencySignal = pick(['⏰', '🚨', '⚡', '🔥', '⌛']);
+  const valueSignal = pick(['💰', '🤑', '✅', '📊', '💵']);
+  const socialSignal = pick(['⭐', '👥', '🤝', '🏆', '🌟']);
 
   const templates = {
     email: {
       urgency: {
-        en: { subject: `⚡ ${d} OFF at ${m} — Ends Soon!`, body: `Don't miss out! Get ${d} off on orders above ${min} at ${m}. Only ${max} deals left. Grab yours before it's gone!`, cta: 'Claim Deal Now' },
-        hi: { subject: `⚡ ${m} पर ${d} की छूट — जल्दी करें!`, body: `मत चूकिए! ${min} से ऊपर के ऑर्डर पर ${d} की छूट पाएं। सिर्फ ${max} डील बची हैं। अभी लूट लो!`, cta: 'अभी डील लें' },
-        te: { subject: `⚡ ${m} వద్ద ${d} తగ్గింపు — తొందరగా!`, body: `మిస్ చేయకండి! ${min} పైన ఆర్డర్లపై ${d} తగ్గింపు పొందండి. ${max} డీల్స్ మాత్రమే మిగిలాయి!`, cta: 'డీల్ తీసుకో' }
+        en: { subject: enUrgencySubject, headline: `${urgencySignal} ${d} OFF at ${m} — Deal Expires Soon`, body: enUrgencyBody, cta: enUrgencyCta },
+        hi: { subject: hiUrgencySubject, headline: `${urgencySignal} ${m} पर ${d} की छूट — डील जल्द खत्म`, body: hiUrgencyBody, cta: hiUrgencyCta },
+        te: { subject: teUrgencySubject, headline: `${urgencySignal} ${m} లో ${d} తగ్గింపు — డీల్ త్వరలో ముగుస్తుంది`, body: teUrgencyBody, cta: teUrgencyCta }
       },
       value_highlight: {
-        en: { subject: `Save Big: ${d} OFF at ${m}`, body: `Smart shoppers choose ${m}. Enjoy ${d} off when you spend above ${min}. Maximum savings, minimum spend.`, cta: 'Shop & Save' },
-        hi: { subject: `बड़ी बचत: ${m} पर ${d} की छूट`, body: `होशियार खरीदार ${m} को चुनते हैं। ${min} से ऊपर खर्च करने पर ${d} की छूट। अधिकतम बचत, कम खर्च।`, cta: 'खरीदो और बचाओ' },
-        te: { subject: `పెద్ద సేవింగ్స్: ${m} లో ${d} తగ్గింపు`, body: `తెలివైన కొనుగోలుదారులు ${m} ని ఎంచుకుంటారు. ${min} పైన ఖర్చు చేసినప్పుడు ${d} తగ్గింపు.`, cta: 'కొనుగోలు చేయండి' }
+        en: { subject: enValueSubject, headline: `${valueSignal} Here's Exactly How Much You Save at ${m}`, body: enValueBody, cta: enValueCta },
+        hi: { subject: hiValueSubject, headline: `${valueSignal} ${m} पर बचत का पूरा हिसाब`, body: hiValueBody, cta: hiValueCta },
+        te: { subject: teValueSubject, headline: `${valueSignal} ${m} లో ఆదా యొక్క పూర్తి లెక్క`, body: teValueBody, cta: teValueCta }
       },
       social_proof: {
-        en: { subject: `10,000+ Users Already Saving at ${m}!`, body: `Join thousands of smart shoppers saving ${d} on every ${cat} order above ${min} at ${m}. Your turn to save!`, cta: 'Join & Save' },
-        hi: { subject: `10,000+ यूजर पहले से ${m} पर बचत कर रहे हैं!`, body: `हजारों स्मार्ट शॉपर्स के साथ जुड़ें जो ${m} पर ${d} बचा रहे हैं। अब आपकी बारी!`, cta: 'जुड़ें और बचाएं' },
-        te: { subject: `10,000+ వినియోగదారులు ${m} లో ఆదా చేస్తున్నారు!`, body: `వేలాది తెలివైన కొనుగోలుదారులతో చేరండి. ${m} లో ${d} ఆదా చేయండి.`, cta: 'చేరండి మరియు ఆదా చేయండి' }
+        en: { subject: enSocialSubject, headline: `${socialSignal} ${popularityLabel} Already Chose This ${m} Deal`, body: enSocialBody, cta: enSocialCta },
+        hi: { subject: hiSocialSubject, headline: `${socialSignal} ${popularityLabelHi} पहले से इस ${m} डील को चुन चुके हैं`, body: hiSocialBody, cta: hiSocialCta },
+        te: { subject: teSocialSubject, headline: `${socialSignal} ${popularityLabelTe} ఇప్పటికే ఈ ${m} డీల్ ఎంచుకున్నారు`, body: teSocialBody, cta: teSocialCta }
       }
     },
     whatsapp: {
       urgency: {
-        en: { message: `🔥 *${d} OFF at ${m}!* Order above ${min}. Only ${max} left! 👉 Grab now: grabon.in` },
-        hi: { message: `🔥 *${m} पर ${d} की छूट!* ${min} से ऊपर ऑर्डर करें। सिर्फ ${max} बची हैं! 👉 अभी लें: grabon.in` },
-        te: { message: `🔥 *${m} లో ${d} తగ్గింపు!* ${min} పైన ఆర్డర్ చేయండి. ${max} మాత్రమే మిగిలాయి! 👉 grabon.in` }
+        en: { message: `${urgencySignal} *${d} OFF at ${m}!* Spend above ${min}. Only ${max} left — grab it: grabon.in` },
+        hi: { message: `${urgencySignal} *${m} पर ${d} की छूट!* ${min} से ऊपर करो। सिर्फ ${max} बची — लो: grabon.in` },
+        te: { message: `${urgencySignal} *${m} లో ${d} తగ్గింపు!* ${min} పైన చేయండి. ${max} మాత్రమే — తీసుకోండి: grabon.in` }
       },
       value_highlight: {
-        en: { message: `💰 Save ${d} at ${m}! Min order ${min}. Use on GrabOn ✅ grabon.in` },
-        hi: { message: `💰 ${m} पर ${d} बचाएं! न्यूनतम ऑर्डर ${min}। GrabOn पर उपयोग करें ✅ grabon.in` },
-        te: { message: `💰 ${m} లో ${d} ఆదా చేయండి! కనీస ఆర్డర్ ${min}. GrabOn లో వాడండి ✅ grabon.in` }
+        en: { message: `${valueSignal} ${d} off every order above ${min} at ${m}. GrabOn exclusive.${excl} grabon.in` },
+        hi: { message: `${valueSignal} ${m} पर ${min} से ऊपर हर ऑर्डर पर ${d} छूट। GrabOn एक्सक्लूसिव।${excl} grabon.in` },
+        te: { message: `${valueSignal} ${m} లో ${min} పైన ప్రతి ఆర్డర్‌పై ${d} తగ్గింపు. GrabOn ఎక్స్‌క్లూజివ్.${excl} grabon.in` }
       },
       social_proof: {
-        en: { message: `⭐ 10K+ people saved ${d} at ${m} today! Join them 👉 grabon.in` },
-        hi: { message: `⭐ 10K+ लोगों ने आज ${m} पर ${d} बचाया! आप भी जुड़ें 👉 grabon.in` },
-        te: { message: `⭐ 10K+ మంది ఈ రోజు ${m} లో ${d} ఆదా చేశారు! మీరూ చేరండి 👉 grabon.in` }
+        en: { message: `${socialSignal} ${popularityLabel} saved ${d} at ${m} this week! Join them on GrabOn 👉 grabon.in` },
+        hi: { message: `${socialSignal} ${popularityLabelHi} ने इस हफ्ते ${m} पर ${d} बचाया! GrabOn पर जुड़ो 👉 grabon.in` },
+        te: { message: `${socialSignal} ${popularityLabelTe} ఈ వారం ${m} లో ${d} ఆదా చేశారు! GrabOn లో చేరండి 👉 grabon.in` }
       }
     },
     push: {
       urgency: {
-        en: { title: `⚡ ${d} OFF Ends Soon!`, body: `${m}: Order above ${min} now` },
-        hi: { title: `⚡ ${d} की छूट जल्द खत्म!`, body: `${m}: अभी ${min} से ऊपर ऑर्डर करें` },
-        te: { title: `⚡ ${d} తగ్గింపు త్వరలో ముగుస్తుంది!`, body: `${m}: ఇప్పుడు ${min} పైన ఆర్డర్ చేయండి` }
+        en: { title: `${urgencySignal} ${d} OFF Ending Soon`, body: `${m}: order above ${min} before ${max} grabs run out` },
+        hi: { title: `${urgencySignal} ${d} छूट जल्द खत्म`, body: `${m}: ${max} खत्म होने से पहले ${min} से ऊपर ऑर्डर करें` },
+        te: { title: `${urgencySignal} ${d} తగ్గింపు త్వరలో ముగుస్తుంది`, body: `${m}: ${max} ముగిసే ముందు ${min} పైన ఆర్డర్ చేయండి` }
       },
       value_highlight: {
-        en: { title: `Save ${d} at ${m}`, body: `Min order ${min} — Exclusive GrabOn deal` },
-        hi: { title: `${m} पर ${d} बचाएं`, body: `न्यूनतम ${min} — GrabOn एक्सक्लूसिव डील` },
-        te: { title: `${m} లో ${d} ఆదా`, body: `కనిష్ట ${min} — GrabOn ఎక్స్‌క్లూజివ్` }
+        en: { title: `${valueSignal} Save ${d} at ${m}`, body: `Spend ${min} on ${cat} — pocket ${d} back.${excl}` },
+        hi: { title: `${valueSignal} ${m} पर ${d} बचाएं`, body: `${cat} पर ${min} खर्च करें — ${d} वापस पाएं।${excl}` },
+        te: { title: `${valueSignal} ${m} లో ${d} ఆదా చేయండి`, body: `${cat} పై ${min} ఖర్చు చేయండి — ${d} వెనక్కి పొందండి.${excl}` }
       },
       social_proof: {
-        en: { title: `${max} People Saved Today!`, body: `Get ${d} off at ${m} — order above ${min}` },
-        hi: { title: `${max} लोगों ने आज बचाया!`, body: `${m} पर ${d} छूट — ${min} से ऊपर ऑर्डर करें` },
-        te: { title: `${max} మంది ఈ రోజు ఆదా చేశారు!`, body: `${m} లో ${d} తగ్గింపు — ${min} పైన ఆర్డర్` }
+        en: { title: `${socialSignal} ${popularityLabel} saved here!`, body: `${m}: ${d} off ${cat} orders above ${min}` },
+        hi: { title: `${socialSignal} ${popularityLabelHi} ने यहाँ बचाया!`, body: `${m}: ${min} से ऊपर ${cat} ऑर्डर पर ${d} छूट` },
+        te: { title: `${socialSignal} ${popularityLabelTe} ఇక్కడ ఆదా చేశారు!`, body: `${m}: ${min} పైన ${cat} ఆర్డర్‌పై ${d} తగ్గింపు` }
       }
     },
     glance: {
       urgency: {
-        en: { headline: `⚡ Hurry! ${d} OFF at ${m}`, card_text: `Flash deal ending soon! Order above ${min} and save ${d} on ${cat}. ${max} redemptions only.` },
-        hi: { headline: `⚡ जल्दी करें! ${m} पर ${d} की छूट`, card_text: `फ्लैश डील जल्द खत्म! ${min} से ऊपर ऑर्डर करें और ${d} बचाएं।` },
-        te: { headline: `⚡ తొందరగా! ${m} లో ${d} తగ్గింపు`, card_text: `ఫ్లాష్ డీల్ త్వరలో ముగుస్తుంది! ${min} పైన ఆర్డర్ చేసి ${d} ఆదా చేయండి.` }
+        en: { card_text: `${urgencySignal} ${m} deal ends soon — ${d} off ${cat} orders above ${min}. Only ${max} left. Tap to claim.` },
+        hi: { card_text: `${urgencySignal} ${m} डील जल्द बंद — ${min} से ऊपर ${cat} पर ${d} की छूट। सिर्फ ${max} बचे। अभी लो।` },
+        te: { card_text: `${urgencySignal} ${m} డీల్ త్వరలో ముగుస్తుంది — ${min} పైన ${cat}పై ${d} తగ్గింపు. ${max} మాత్రమే. ట్యాప్ చేయండి.` }
       },
       value_highlight: {
-        en: { headline: `${d} OFF — ${m} Exclusive`, card_text: `Save big on your next ${cat} order. Get ${d} off when you spend above ${min} at ${m}.` },
-        hi: { headline: `${d} की छूट — ${m} एक्सक्लूसिव`, card_text: `अपने अगले ऑर्डर पर बड़ी बचत। ${min} से ऊपर खर्च पर ${d} की छूट।` },
-        te: { headline: `${d} తగ్గింపు — ${m} ఎక్స్‌క్లూజివ్`, card_text: `మీ తదుపరి ఆర్డర్‌పై పెద్ద ఆదా. ${min} పైన ఖర్చు చేస్తే ${d} తగ్గింపు.` }
+        en: { card_text: `${valueSignal} ${d} off at ${m} — spend ${min} on ${cat}, save real money.${excl} Tap to apply.` },
+        hi: { card_text: `${valueSignal} ${m} पर ${d} छूट — ${min} खर्च करें, असली बचत।${excl} अभी लगाएं।` },
+        te: { card_text: `${valueSignal} ${m} లో ${d} తగ్గింపు — ${min} ఖర్చు చేయండి, నిజమైన ఆదా.${excl} ట్యాప్ చేయండి.` }
       },
       social_proof: {
-        en: { headline: `Trending: ${d} OFF at ${m}`, card_text: `Join ${max} smart shoppers saving on ${cat}. Order above ${min} and enjoy ${d} off!` },
-        hi: { headline: `ट्रेंडिंग: ${m} पर ${d} छूट`, card_text: `${max} स्मार्ट शॉपर्स के साथ जुड़ें। ${min} से ऊपर ऑर्डर करें और ${d} बचाएं!` },
-        te: { headline: `ట్రెండింగ్: ${m} లో ${d} తగ్గింపు`, card_text: `${max} తెలివైన కొనుగోలుదారులతో చేరండి. ${min} పైన ఆర్డర్ చేసి ${d} ఆదా!` }
+        en: { card_text: `${socialSignal} ${popularityLabel} claimed ${d} off at ${m}! Min order ${min}.${excl} You're next — tap to save.` },
+        hi: { card_text: `${socialSignal} ${popularityLabelHi} ने ${m} पर ${d} झटका! न्यूनतम ${min}.${excl} आपकी बारी — टैप करें।` },
+        te: { card_text: `${socialSignal} ${popularityLabelTe} ${m} లో ${d} క్లెయిమ్ చేశారు! కనిష్ట ${min}.${excl} మీ వంతు — ట్యాప్ చేయండి.` }
       }
     },
     payu_banner: {
       urgency: {
-        en: { headline: `${d} OFF at ${m}!`, banner_text: `Use at checkout`, cta: 'Grab Deal' },
-        hi: { headline: `${m} पर ${d} छूट!`, banner_text: `चेकआउट पर उपयोग करें`, cta: 'डील लें' },
-        te: { headline: `${m} లో ${d} తగ్గింపు!`, banner_text: `చెక్అవుట్‌లో వాడండి`, cta: 'డీల్ తీసుకో' }
+        en: { banner_text: `${urgencySignal} ${d} off — ends soon!` },
+        hi: { banner_text: `${urgencySignal} ${d} छूट — जल्द खत्म!` },
+        te: { banner_text: `${urgencySignal} ${d} తగ్గింపు — త్వరలో!` }
       },
       value_highlight: {
-        en: { headline: `Save ${d} Now`, banner_text: `Min order ${min}`, cta: 'Shop Now' },
-        hi: { headline: `अभी ${d} बचाएं`, banner_text: `न्यूनतम ऑर्डर ${min}`, cta: 'अभी खरीदें' },
-        te: { headline: `ఇప్పుడు ${d} ఆదా`, banner_text: `కనీస ఆర్డర్ ${min}`, cta: 'ఇప్పుడు కొనండి' }
+        en: { banner_text: `${valueSignal} Save ${d} on ${m}` },
+        hi: { banner_text: `${valueSignal} ${m} पर ${d} बचाएं` },
+        te: { banner_text: `${valueSignal} ${m} లో ${d} ఆదా` }
       },
       social_proof: {
-        en: { headline: `${max} Deals Claimed!`, banner_text: `${d} off — ${m}`, cta: 'Claim Yours' },
-        hi: { headline: `${max} डील ली गईं!`, banner_text: `${d} छूट — ${m}`, cta: 'अपनी लें' },
-        te: { headline: `${max} డీల్స్ క్లెయిమ్ అయ్యాయి!`, banner_text: `${d} తగ్గింపు — ${m}`, cta: 'మీది తీసుకోండి' }
+        en: { banner_text: `${socialSignal} ${max} saved ${d} here!` },
+        hi: { banner_text: `${socialSignal} ${max} ने ${d} बचाया!` },
+        te: { banner_text: `${socialSignal} ${max} మంది ${d} ఆదా!` }
       }
     },
     instagram: {
       urgency: {
-        en: { caption: `🔥 FLASH DEAL ALERT! ${d} OFF at ${m} 🔥\n\n${max} deals only — grab yours NOW!\nMin order: ${min}\n\n🔗 Link in bio!\n\n#GrabOn #${m.replace(/\s/g,'')} #FlashSale #Deal`, hashtags: ['#GrabOn', `#${m.replace(/\s/g,'')}`, '#FlashSale', '#LimitedOffer'] },
-        hi: { caption: `🔥 फ्लैश डील अलर्ट! ${m} पर ${d} की छूट 🔥\n\nसिर्फ ${max} डील — अभी लो!\nन्यूनतम ऑर्डर: ${min}\n\n🔗 बायो में लिंक!\n\n#GrabOn #ऑफर #सेल`, hashtags: ['#GrabOn', '#FlashSale', '#OffersIndia', '#सेल'] },
-        te: { caption: `🔥 ఫ్లాష్ డీల్! ${m} లో ${d} తగ్గింపు 🔥\n\n${max} డీల్స్ మాత్రమే!\nకనీస ఆర్డర్: ${min}\n\n🔗 బయో లో లింక్!\n\n#GrabOn #సేల్`, hashtags: ['#GrabOn', '#FlashSale', '#TeluguDeals', '#సేల్'] }
+        en: {
+          caption: pick([
+            `${urgencySignal} DEAL ALERT: ${d} OFF at ${m}!\n\n⏳ Only ${max} left — order above ${min} before time runs out.\n🔗 Link in bio!\n\n#GrabOn #${m.replace(/\s/g,'')} #FlashDeal #LimitedOffer`,
+            `🚨 LAST CALL: ${m} is offering ${d} off and it ends SOON.\n\nMin ${min} | ${max} slots | GrabOn exclusive\n🔗 Tap link in bio!\n\n#GrabOn #${m.replace(/\s/g,'')} #DeadlineDeals #HurryUp`,
+            `⌛ Tick tock — ${m}'s ${d} deal closes in hours!\n\n👉 Spend above ${min}. Only ${max} claims left.\n🔗 Link in bio.\n\n#GrabOn #${m.replace(/\s/g,'')} #FlashSale #FOMO`,
+          ]),
+          hashtags: ['#GrabOn', `#${m.replace(/\s/g,'')}`, '#FlashDeal', '#LimitedOffer']
+        },
+        hi: {
+          caption: pick([
+            `${urgencySignal} डील अलर्ट: ${m} पर ${d} की छूट!\n\n⏳ सिर्फ ${max} बची — ${min} से ऊपर अभी ऑर्डर करें।\n🔗 बायो में लिंक!\n\n#GrabOn #FlashDeal #LimitedOffer #ऑफर`,
+            `🚨 आखिरी मौका: ${m} पर ${d} छूट जल्द बंद।\n\nन्यूनतम ${min} | ${max} स्लॉट | GrabOn एक्सक्लूसिव\n🔗 बायो में टैप करें!\n\n#GrabOn #DeadlineDeals #जल्दीकरो`,
+            `⌛ टिक-टॉक — ${m} की ${d} डील घंटों में बंद!\n\n👉 ${min} से ऊपर। ${max} क्लेम बचे।\n🔗 बायो में लिंक।\n\n#GrabOn #FlashSale #FOMO #सेल`,
+          ]),
+          hashtags: ['#GrabOn', '#FlashDeal', '#OffersIndia', '#सेल']
+        },
+        te: {
+          caption: pick([
+            `${urgencySignal} డీల్ అలర్ట్: ${m} లో ${d} తగ్గింపు!\n\n⏳ ${max} మాత్రమే — ${min} పైన ఆర్డర్ చేయండి.\n🔗 బయో లో లింక్!\n\n#GrabOn #FlashDeal #LimitedOffer #సేల్`,
+            `🚨 చివరి అవకాశం: ${m} లో ${d} తగ్గింపు త్వరలో ముగుస్తుంది.\n\nకనీస ${min} | ${max} స్లాట్లు\n🔗 బయో లో ట్యాప్ చేయండి!\n\n#GrabOn #DeadlineDeals #తొందరగా`,
+            `⌛ సమయం తక్కువ — ${m} యొక్క ${d} డీల్ గంటల్లో ముగుస్తుంది!\n\n👉 ${min} పైన. ${max} క్లెయిమ్లు మిగిలాయి.\n🔗 బయో లో లింక్.\n\n#GrabOn #FlashSale #FOMO #సేల్`,
+          ]),
+          hashtags: ['#GrabOn', '#FlashDeal', '#TeluguDeals', '#సేల్']
+        }
       },
       value_highlight: {
-        en: { caption: `💰 Smart Savings at ${m}!\n\n✅ ${d} OFF on ${cat} orders\n✅ Min order: ${min}\n✅ Exclusive on GrabOn\n\nSave more, spend less! 🛍️\n🔗 Link in bio\n\n#GrabOn #SmartShopping #Savings`, hashtags: ['#GrabOn', '#SmartShopping', '#Savings', '#${cat}'] },
-        hi: { caption: `💰 ${m} पर स्मार्ट बचत!\n\n✅ ${cat} पर ${d} की छूट\n✅ न्यूनतम: ${min}\n✅ सिर्फ GrabOn पर\n\n#GrabOn #स्मार्टशॉपिंग #बचत`, hashtags: ['#GrabOn', '#बचत', '#SmartShopping', '#OffersIndia'] },
-        te: { caption: `💰 ${m} లో స్మార్ట్ సేవింగ్స్!\n\n✅ ${d} తగ్గింపు\n✅ కనీస: ${min}\n✅ GrabOn లో మాత్రమే\n\n#GrabOn #స్మార్ట్షాపింగ్`, hashtags: ['#GrabOn', '#Savings', '#TeluguDeals'] }
+        en: {
+          caption: pick([
+            `${valueSignal} The math is simple: spend ${min} at ${m}, save ${d}.\n\n✔️ ${cat} orders\n✔️ GrabOn exclusive${excl}\n✔️ No tricks, just savings\n🔗 Link in bio\n\n#GrabOn #${m.replace(/\s/g,'')} #SmartShopping #SaveMoney`,
+            `💵 Real savings, no hype.\n\n${m} + GrabOn = ${d} off every ${cat} order above ${min}.\n\nWhy pay full price?\n🔗 Link in bio\n\n#GrabOn #${m.replace(/\s/g,'')} #ValueForMoney #Savings`,
+            `📊 Savings breakdown:\n→ Order: above ${min} at ${m}\n→ Discount: ${d} off\n→ Category: ${cat}\n\nBest deal on GrabOn right now.\n🔗 Link in bio\n\n#GrabOn #${m.replace(/\s/g,'')} #DealAlert #SmallBudgetBigSavings`,
+          ]),
+          hashtags: ['#GrabOn', `#${m.replace(/\s/g,'')}`, '#SmartShopping', '#Savings']
+        },
+        hi: {
+          caption: pick([
+            `${valueSignal} हिसाब सीधा है: ${m} पर ${min} खर्च करो, ${d} बचाओ।\n\n✔️ ${cat} ऑर्डर\n✔️ GrabOn एक्सक्लूसिव${excl}\n🔗 बायो में लिंक\n\n#GrabOn #SmartShopping #पैसाबचाओ`,
+            `💵 असली बचत, बेकार बातें नहीं।\n\n${m} + GrabOn = ${min} से ऊपर हर ${cat} ऑर्डर पर ${d} छूट।\n\nपूरा दाम क्यों दो?\n🔗 बायो में लिंक\n\n#GrabOn #ValueForMoney #बचत`,
+            `📊 बचत का हिसाब:\n→ ऑर्डर: ${m} पर ${min} से ऊपर\n→ छूट: ${d}\n→ कैटेगरी: ${cat}\n\nGrabOn पर अभी सबसे अच्छी डील।\n🔗 बायो में लिंक\n\n#GrabOn #DealAlert #SmartShopping`,
+          ]),
+          hashtags: ['#GrabOn', '#बचत', '#SmartShopping', '#OffersIndia']
+        },
+        te: {
+          caption: pick([
+            `${valueSignal} లెక్క సులభం: ${m} లో ${min} ఖర్చు చేయండి, ${d} ఆదా చేయండి.\n\n✔️ ${cat} ఆర్డర్లు\n✔️ GrabOn ఎక్స్‌క్లూజివ్${excl}\n🔗 బయో లో లింక్\n\n#GrabOn #స్మార్ట్షాపింగ్ #డబ్బుఆదా`,
+            `💵 నిజమైన ఆదా, హైప్ లేదు.\n\n${m} + GrabOn = ${min} పైన ప్రతి ${cat} ఆర్డర్‌పై ${d} తగ్గింపు.\n\nపూర్తి ధర ఎందుకు?\n🔗 బయో లో లింక్\n\n#GrabOn #ValueForMoney #ఆదా`,
+            `📊 ఆదా వివరాలు:\n→ ఆర్డర్: ${m} లో ${min} పైన\n→ తగ్గింపు: ${d}\n→ విభాగం: ${cat}\n\nGrabOn లో ఇప్పుడు అత్యుత్తమ డీల్.\n🔗 బయో లో లింక్\n\n#GrabOn #DealAlert #స్మార్ట్షాపింగ్`,
+          ]),
+          hashtags: ['#GrabOn', '#Savings', '#TeluguDeals', '#స్మార్ట్షాపింగ్']
+        }
       },
       social_proof: {
-        en: { caption: `⭐ Everyone's saving at ${m}!\n\n${max} people already claimed ${d} OFF on ${cat}.\n\nDon't be left out 👉 min order ${min}\n🔗 Grab yours — link in bio!\n\n#GrabOn #Trending #FOMO`, hashtags: ['#GrabOn', '#Trending', '#FOMO', '#SocialShopping'] },
-        hi: { caption: `⭐ सब ${m} पर बचत कर रहे हैं!\n\n${max} लोगों ने पहले से ${d} छूट ली।\n\nपीछे मत रहो 👉 न्यूनतम ${min}\n🔗 GrabOn पर लें!\n\n#GrabOn #ट्रेंडिंग`, hashtags: ['#GrabOn', '#Trending', '#FOMO', '#IndiaOffers'] },
-        te: { caption: `⭐ అందరూ ${m} లో ఆదా చేస్తున్నారు!\n\n${max} మంది ఇప్పటికే ${d} తగ్గింపు తీసుకున్నారు.\n\n🔗 GrabOn లో తీసుకోండి!\n\n#GrabOn #ట్రెండింగ్`, hashtags: ['#GrabOn', '#Trending', '#FOMO', '#TeluguDeals'] }
+        en: {
+          caption: pick([
+            `${socialSignal} ${popularityLabel} are saving ${d} at ${m} on GrabOn.\n\nIf that many people chose it, you know it's legit.\n👉 Min order ${min}\n🔗 Link in bio!\n\n#GrabOn #${m.replace(/\s/g,'')} #Trending #CrowdFavourite`,
+            `🌟 The crowd doesn't lie — ${popularityLabel} grabbed ${d} off at ${m} already.\n\nOrder above ${min}. Join the most-claimed GrabOn deal.\n🔗 Link in bio\n\n#GrabOn #${m.replace(/\s/g,'')} #FOMO #Trending`,
+            `🤝 Word of mouth brought you here: ${m}'s ${d} deal is the talk of GrabOn.\n${popularityLabel} can't be wrong. Min ${min}.\n🔗 Grab yours — link in bio!\n\n#GrabOn #${m.replace(/\s/g,'')} #SocialShopping #Viral`,
+          ]),
+          hashtags: ['#GrabOn', `#${m.replace(/\s/g,'')}`, '#Trending', '#CrowdFavourite']
+        },
+        hi: {
+          caption: pick([
+            `${socialSignal} ${popularityLabelHi} GrabOn पर ${m} से ${d} बचा रहे हैं।\n\nइतने लोग नहीं चूक सकते।\n👉 न्यूनतम ${min}\n🔗 बायो में लिंक!\n\n#GrabOn #ट्रेंडिंग #CrowdFavourite`,
+            `🌟 भीड़ झूठ नहीं बोलती — ${popularityLabelHi} ने ${m} पर ${d} छूट ली।\n\n${min} से ऊपर ऑर्डर करें। सबसे ज़्यादा ली गई GrabOn डील।\n🔗 बायो में लिंक\n\n#GrabOn #FOMO #ट्रेंडिंग`,
+            `🤝 अफवाह फैल गई: ${m} की ${d} डील GrabOn पर सबसे चर्चित है।\n${popularityLabelHi} गलत नहीं हो सकते। ${min} से ऊपर।\n🔗 बायो में लिंक!\n\n#GrabOn #SocialShopping #Viral`,
+          ]),
+          hashtags: ['#GrabOn', '#Trending', '#FOMO', '#IndiaOffers']
+        },
+        te: {
+          caption: pick([
+            `${socialSignal} ${popularityLabelTe} GrabOn లో ${m} నుండి ${d} ఆదా చేస్తున్నారు.\n\nఇంత మంది తప్పు కావటం సాధ్యం కాదు.\n👉 కనీస ${min}\n🔗 బయో లో లింక్!\n\n#GrabOn #ట్రెండింగ్ #CrowdFavourite`,
+            `🌟 జనాలు అబద్ధం చెప్పరు — ${popularityLabelTe} ${m} లో ${d} తగ్గింపు తీసుకున్నారు.\n\n${min} పైన ఆర్డర్ చేయండి. అత్యధికంగా క్లెయిమ్ చేయబడిన GrabOn డీల్.\n🔗 బయో లో లింక్\n\n#GrabOn #FOMO #ట్రెండింగ్`,
+            `🤝 పుకారు వ్యాపించింది: ${m} యొక్క ${d} డీల్ GrabOn లో అత్యంత చర్చనీయం.\n${popularityLabelTe} తప్పు కాలేరు. ${min} పైన.\n🔗 బయో లో లింక్!\n\n#GrabOn #SocialShopping #Viral`,
+          ]),
+          hashtags: ['#GrabOn', '#ట్రెండింగ్', '#FOMO', '#TeluguDeals']
+        }
       }
     }
   };
